@@ -307,9 +307,8 @@
     </div>
 
     {{-- ═ DESKTOP: Kolom Kanan (Ghost Input + Habits) ═ --}}
-    <div class="col-span-4 flex flex-col gap-6">
-        <div class="flex flex-col gap-4 p-6 pl-0"
-             x-data="{
+    <div class="col-span-4 flex flex-col gap-6"
+         x-data="{
                 inputMode: 'reguler',
                 inputText: '',
                 walletId: '',
@@ -394,6 +393,7 @@
                     this.loading = false;
                 }
              }">
+        <div class="flex flex-col gap-4 p-6 pl-0">
             <p class="section-title mb-3">⚡ Catat Cepat</p>
 
             {{-- Tabs --}}
