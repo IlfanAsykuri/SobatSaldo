@@ -167,9 +167,13 @@ class TransactionController extends Controller
                     if (strlen($word) < 2) continue;
                     $match = KeywordDictionary::forUser($userId)
                         ->where('keyword', $word)
+                        ->with('category')
                         ->first();
                     if ($match) {
                         $categoryId = $match->category_id;
+                        if ($match->category) {
+                            $type = $match->category->type;
+                        }
                         break;
                     }
                 }
