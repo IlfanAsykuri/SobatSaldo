@@ -33,6 +33,11 @@ class WalletController extends Controller
 
             return view('app.wallet', compact('wallets', 'totalBalance', 'activities'));
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('WalletController@index error: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return back()->with('error', 'Terjadi kesalahan saat memuat dompet.');
         }
     }

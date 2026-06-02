@@ -37,11 +37,18 @@ class AuthController extends Controller
 
         if (Auth::attempt($request->only('email', 'password'), $remember)) {
             RateLimiter::clear($throttleKey);
-            
-            // Logout from other devices automatically
-            Auth::logoutOtherDevices($request->password);
-            
+
+            // Regenerate session first to get new session ID
             $request->session()->regenerate();
+
+            // Hapus sesi lain dari tabel sessions (Single Device Login)
+            // Dilakukan SETELAH regenerate agar sesi baru tidak ikut terhapus
+            $currentSessionId = $request->session()->getId();
+            \Illuminate\Support\Facades\DB::table('sessions')
+                ->where('user_id', Auth::id())
+                ->where('id', '!=', $currentSessionId)
+                ->delete();
+
             return redirect()->intended(route('app.workspace'));
         }
 

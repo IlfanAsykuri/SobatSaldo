@@ -12,7 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            //
+            // Untuk fitur mutasi/transfer antar dompet
+            $table->unsignedBigInteger('to_wallet_id')->nullable()->after('wallet_id');
+            $table->foreign('to_wallet_id')->references('id')->on('wallets')->nullOnDelete();
+
+            // Untuk fitur hutang/piutang
+            $table->string('desc_hutang')->nullable()->after('raw_text');
         });
     }
 
