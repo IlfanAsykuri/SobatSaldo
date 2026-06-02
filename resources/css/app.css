@@ -1,0 +1,429 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+/* ============================================
+   SOBATSALDO DESIGN SYSTEM
+   ============================================ */
+
+@theme {
+    /* === Typography === */
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* === Brand Colors === */
+    --color-brand-50:  #ecfdf5;
+    --color-brand-100: #d1fae5;
+    --color-brand-200: #a7f3d0;
+    --color-brand-300: #6ee7b7;
+    --color-brand-400: #34d399;
+    --color-brand-500: #10b981;
+    --color-brand-600: #059669;
+    --color-brand-700: #047857;
+    --color-brand-800: #065f46;
+    --color-brand-900: #064e3b;
+
+    /* === Surface Tokens === */
+    --color-surface-light: #f8fafc;   /* slate-50 */
+    --color-surface-dark:  #0f172a;   /* slate-900 */
+    --color-card-light:    #ffffff;
+    --color-card-dark:     #1e293b;   /* slate-800 */
+
+    /* === Shadows === */
+    --shadow-card: 0 4px 24px -4px rgba(0,0,0,0.08), 0 1px 4px -1px rgba(0,0,0,0.04);
+    --shadow-card-hover: 0 8px 40px -6px rgba(0,0,0,0.14), 0 2px 8px -2px rgba(0,0,0,0.06);
+    --shadow-sidebar: 2px 0 24px -4px rgba(0,0,0,0.06);
+    --shadow-bottom-nav: 0 -4px 24px -4px rgba(0,0,0,0.08);
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+@layer base {
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        @apply bg-slate-50 text-slate-900 antialiased;
+        font-family: var(--font-sans);
+    }
+
+    /* Dark mode base */
+    .dark body, body.dark {
+        @apply bg-slate-900 text-slate-100;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-semibold leading-tight tracking-tight;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        @apply bg-slate-200 rounded-full;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+        @apply bg-slate-700;
+    }
+}
+
+/* ============================================
+   COMPONENT UTILITIES
+   ============================================ */
+
+@layer components {
+
+    /* === Card === */
+    .card {
+        @apply bg-white rounded-3xl shadow-[var(--shadow-card)] transition-shadow duration-300;
+    }
+    .card:hover {
+        @apply shadow-[var(--shadow-card-hover)];
+    }
+    .dark .card {
+        @apply bg-slate-800;
+    }
+
+    /* === Button Variants === */
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2
+               bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800
+               text-white font-semibold rounded-full
+               px-6 py-3 text-sm
+               transition-all duration-200
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
+               select-none cursor-pointer;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2
+               bg-slate-100 hover:bg-slate-200 active:bg-slate-300
+               text-slate-700 font-semibold rounded-full
+               px-6 py-3 text-sm
+               transition-all duration-200
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2
+               select-none cursor-pointer;
+    }
+    .dark .btn-secondary {
+        @apply bg-slate-700 hover:bg-slate-600 text-slate-200;
+    }
+
+    .btn-ghost {
+        @apply inline-flex items-center justify-center gap-2
+               text-slate-600 hover:text-emerald-600 hover:bg-emerald-50
+               font-medium rounded-full px-4 py-2 text-sm
+               transition-all duration-200
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400;
+    }
+    .dark .btn-ghost {
+        @apply text-slate-400 hover:text-emerald-400 hover:bg-emerald-950;
+    }
+
+    .btn-icon {
+        @apply inline-flex items-center justify-center
+               w-10 h-10 rounded-full
+               bg-slate-100 hover:bg-slate-200
+               text-slate-600 transition-all duration-200
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400;
+    }
+    .dark .btn-icon {
+        @apply bg-slate-700 hover:bg-slate-600 text-slate-300;
+    }
+
+    /* === Form Inputs === */
+    .input-field {
+        @apply w-full bg-slate-100 text-slate-900 placeholder-slate-400
+               rounded-2xl px-4 py-3.5 text-sm font-medium
+               border-0 outline-none
+               focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0
+               transition-all duration-200;
+    }
+    .dark .input-field {
+        @apply bg-slate-700 text-slate-100 placeholder-slate-500
+               focus:bg-slate-600 focus:ring-emerald-400;
+    }
+
+    /* === Navigation Item === */
+    .nav-item {
+        @apply flex items-center gap-3 px-4 py-3 rounded-2xl
+               text-slate-500 font-medium text-sm
+               hover:bg-emerald-50 hover:text-emerald-700
+               transition-all duration-200 cursor-pointer;
+    }
+    .dark .nav-item {
+        @apply text-slate-400 hover:bg-emerald-950 hover:text-emerald-400;
+    }
+    .nav-item.active {
+        @apply bg-emerald-50 text-emerald-700 font-semibold;
+    }
+    .dark .nav-item.active {
+        @apply bg-emerald-950 text-emerald-400;
+    }
+
+    /* === Badge === */
+    .badge {
+        @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold;
+    }
+    .badge-success {
+        @apply bg-emerald-100 text-emerald-700;
+    }
+    .badge-warning {
+        @apply bg-amber-100 text-amber-700;
+    }
+    .badge-danger {
+        @apply bg-red-100 text-red-700;
+    }
+    .badge-info {
+        @apply bg-blue-100 text-blue-700;
+    }
+
+    /* === Section Header === */
+    .section-title {
+        @apply text-xs font-bold uppercase tracking-widest text-slate-400 mb-3;
+    }
+
+    /* === Ghost Input === */
+    .ghost-input {
+        @apply bg-transparent border-0 outline-none ring-0 focus:ring-0
+               text-5xl font-bold text-center text-slate-900 dark:text-white
+               w-full caret-emerald-500 placeholder-slate-300;
+    }
+
+    /* === ATM Card === */
+    .atm-card {
+        @apply relative overflow-hidden rounded-3xl p-6 text-white
+               min-h-[180px] flex flex-col justify-between;
+    }
+
+    /* === Overlay Backdrop === */
+    .modal-backdrop {
+        @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-40;
+    }
+
+    /* === Toggle Switch === */
+    .toggle-track {
+        @apply relative w-12 h-6 rounded-full transition-colors duration-200 cursor-pointer;
+    }
+    .toggle-thumb {
+        @apply absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm
+               transition-transform duration-200;
+    }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@layer utilities {
+
+    /* Slide up (for bottom sheet) */
+    @keyframes slide-up {
+        from { transform: translateY(100%); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+    .animate-slide-up {
+        animation: slide-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Fade in */
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(-8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+    }
+
+    /* Scale in (modal) */
+    @keyframes scale-in {
+        from { opacity: 0; transform: scale(0.92); }
+        to   { opacity: 1; transform: scale(1); }
+    }
+    .animate-scale-in {
+        animation: scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Float */
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50%       { transform: translateY(-8px); }
+    }
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    /* Shimmer skeleton */
+    @keyframes shimmer {
+        from { background-position: -200% 0; }
+        to   { background-position: 200% 0; }
+    }
+    .animate-shimmer {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+    }
+
+    /* Gradient text utility */
+    .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+    }
+
+    .bg-gradient-brand {
+        background-image: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+    }
+}
+
+/* ============================================================
+   SWEETALERT2 — CUSTOM THEME SOBATSALDO
+   ============================================================ */
+@import 'sweetalert2/dist/sweetalert2.min.css';
+
+.swal-sobat-popup {
+    border-radius: 1.5rem !important;
+    padding: 2rem !important;
+    font-family: var(--font-sans, 'Plus Jakarta Sans', sans-serif) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important;
+    border: 1px solid rgba(148, 163, 184, 0.15) !important;
+    background: #ffffff !important;
+}
+
+/* Dark mode popup */
+.dark .swal-sobat-popup {
+    background: #1e293b !important;
+    border-color: rgba(100, 116, 139, 0.25) !important;
+    color: #f1f5f9 !important;
+}
+
+.swal-sobat-title {
+    font-size: 1.125rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.dark .swal-sobat-title {
+    color: #f1f5f9 !important;
+}
+
+.swal-sobat-html {
+    color: #64748b !important;
+    font-size: 0.875rem !important;
+    line-height: 1.6 !important;
+}
+
+.dark .swal-sobat-html {
+    color: #94a3b8 !important;
+}
+
+/* Confirm button — Emerald gradient */
+.swal-sobat-confirm {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.375rem !important;
+    padding: 0.625rem 1.5rem !important;
+    border-radius: 9999px !important;
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+    background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: opacity 0.15s, transform 0.15s !important;
+    box-shadow: 0 4px 14px -2px rgba(5, 150, 105, 0.45) !important;
+}
+
+.swal-sobat-confirm:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-1px) !important;
+}
+
+.swal-sobat-confirm:active {
+    transform: translateY(0) !important;
+}
+
+/* Cancel button — Slate ghost */
+.swal-sobat-cancel {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.625rem 1.5rem !important;
+    border-radius: 9999px !important;
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: background 0.15s !important;
+}
+
+.dark .swal-sobat-cancel {
+    background: #334155 !important;
+    color: #94a3b8 !important;
+}
+
+.swal-sobat-cancel:hover {
+    background: #e2e8f0 !important;
+}
+
+.dark .swal-sobat-cancel:hover {
+    background: #475569 !important;
+}
+
+/* Danger confirm button (untuk hapus) */
+.swal2-icon.swal2-warning {
+    border-color: #f59e0b !important;
+    color: #f59e0b !important;
+}
+
+.swal2-icon.swal2-error {
+    border-color: #f43f5e !important;
+    color: #f43f5e !important;
+}
+
+.swal2-icon.swal2-success {
+    border-color: #059669 !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+    background: #059669 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+    border-color: rgba(5, 150, 105, 0.3) !important;
+}
+
+/* Timer progress bar */
+.swal2-timer-progress-bar {
+    background: linear-gradient(90deg, #059669, #34d399) !important;
+    border-radius: 9999px !important;
+}
+
+/* Backdrop */
+.swal2-backdrop-show {
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* Actions container */
+.swal2-actions {
+    gap: 0.75rem !important;
+    margin-top: 1.5rem !important;
+}
