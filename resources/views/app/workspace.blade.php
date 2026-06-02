@@ -307,7 +307,7 @@
     </div>
 
     {{-- ═ DESKTOP: Kolom Kanan (Ghost Input + Habits) ═ --}}
-    <div class="col-span-4 flex flex-col gap-6"
+    <div class="flex flex-col gap-6"
          x-data="{
                 inputMode: 'reguler',
                 inputText: '',
