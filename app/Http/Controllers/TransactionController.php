@@ -122,6 +122,69 @@ class TransactionController extends Controller
     {
         try {
             $userId  = Auth::id();
+            $inputMode = $request->input('inputMode', 'reguler');
+
+            if ($inputMode === 'mutasi') {
+                $transaction = Transaction::create([
+                    'user_id'      => $userId,
+                    'raw_text'     => 'Mutasi Dana',
+                    'amount'       => $request->amount,
+                    'type'         => 'transfer',
+                    'wallet_id'    => $request->wallet_id,
+                    'to_wallet_id' => $request->to_wallet_id,
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Mutasi berhasil dicatat! 🎉',
+                    'data'    => [
+                        'id'       => $transaction->id,
+                        'raw_text' => $transaction->raw_text,
+                        'amount'   => (float) $transaction->amount,
+                        'type'     => $transaction->type,
+                        'category' => 'Mutasi',
+                        'time'     => $transaction->created_at->format('H:i'),
+                    ],
+                    'has_admin_fee' => false,
+                    'admin_fee'     => 0,
+                ]);
+            }
+            
+            if ($inputMode === 'hutang') {
+                $type = in_array($request->type, ['debt', 'collect_receivable']) ? 'income' : 'expense';
+                
+                $prefix = '';
+                if ($request->type === 'debt') $prefix = 'Hutang dari ';
+                if ($request->type === 'repay_debt') $prefix = 'Bayar hutang ke ';
+                if ($request->type === 'receivable') $prefix = 'Beri pinjaman ke ';
+                if ($request->type === 'collect_receivable') $prefix = 'Terima piutang dari ';
+                
+                $transaction = Transaction::create([
+                    'user_id'      => $userId,
+                    'raw_text'     => $prefix . $request->desc_hutang,
+                    'desc_hutang'  => $request->desc_hutang,
+                    'amount'       => $request->amount,
+                    'type'         => $type,
+                    'wallet_id'    => $request->wallet_id,
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Catatan hutang berhasil disimpan! 🎉',
+                    'data'    => [
+                        'id'       => $transaction->id,
+                        'raw_text' => $transaction->raw_text,
+                        'amount'   => (float) $transaction->amount,
+                        'type'     => $transaction->type,
+                        'category' => 'Hutang/Piutang',
+                        'time'     => $transaction->created_at->format('H:i'),
+                    ],
+                    'has_admin_fee' => false,
+                    'admin_fee'     => 0,
+                ]);
+            }
+
+            // --- JIKA MODE REGULER ---
             $rawText = trim($request->raw_text);
             $type    = 'expense';
             $adminFee = 0;

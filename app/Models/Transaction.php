@@ -12,6 +12,7 @@ class Transaction extends Model
         'wallet_id',
         'to_wallet_id',
         'raw_text',
+        'desc_hutang',
         'amount',
         'type',
     ];
