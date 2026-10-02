@@ -29,6 +29,12 @@
     <span>⚠️</span> {{ session('error') }}
 </div>
 @endif
+@if ($errors->any())
+<div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+     x-transition class="fixed top-4 right-4 z-50 p-4 rounded-2xl bg-rose-500 text-white shadow-xl max-w-sm text-sm font-semibold flex items-center gap-2">
+    <span>⚠️</span> {{ $errors->first() }}
+</div>
+@endif
 
 {{-- ═══════════════════════════════════════════════════════════════════════════
      DESKTOP: 2-Column Layout
@@ -153,7 +159,7 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         <div class="w-9 h-9 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg shrink-0">
-                                            {{ $trx->type === 'transfer' ? '🔄' : ($trx->type === 'income' ? '💰' : '💸') }}
+                                            {{ $trx->type === 'transfer' ? '🔄' : ($trx->isDebt() ? '🤝' : ($trx->isInflow() ? '💰' : '💸')) }}
                                         </div>
                                         <div>
                                             <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">{{ $trx->raw_text }}</p>
@@ -162,8 +168,8 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-4">
-                                    <span class="badge {{ $trx->type === 'transfer' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : ($trx->type === 'income' ? 'badge-success' : 'badge-info') }}">
-                                        {{ $trx->type === 'transfer' ? 'Mutasi' : ($trx->category->name ?? 'Lain-lain') }}
+                                    <span class="badge {{ $trx->type === 'transfer' || $trx->isDebt() ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : ($trx->isInflow() ? 'badge-success' : 'badge-info') }}">
+                                        {{ $trx->type === 'transfer' || $trx->isDebt() ? $trx->type_label : ($trx->category->name ?? 'Lain-lain') }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-4">
@@ -172,8 +178,8 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-right">
-                                    <span class="text-sm font-bold {{ $trx->type === 'transfer' ? 'text-slate-500 dark:text-slate-400' : ($trx->type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200') }}">
-                                        {{ $trx->type === 'transfer' ? '' : ($trx->type === 'income' ? '+' : '-') }}Rp {{ number_format($trx->amount, 0, ',', '.') }}
+                                    <span class="text-sm font-bold {{ $trx->type === 'transfer' ? 'text-slate-500 dark:text-slate-400' : ($trx->isInflow() ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200') }}">
+                                        {{ $trx->type === 'transfer' ? '' : ($trx->isInflow() ? '+' : '-') }}Rp {{ number_format($trx->amount, 0, ',', '.') }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-4">
@@ -236,13 +242,17 @@
                                                             <option value="expense">Pengeluaran</option>
                                                             <option value="income">Pemasukan</option>
                                                             <option value="transfer">Mutasi / Transfer</option>
+                                                            <option value="debt">Saya Berhutang</option>
+                                                            <option value="repay_debt">Bayar Hutang</option>
+                                                            <option value="receivable">Beri Pinjaman</option>
+                                                            <option value="collect_receivable">Terima Piutang</option>
                                                         </select>
                                                     </div>
                                                 </div>
                                                 <div class="grid grid-cols-2 gap-3">
-                                                    <div x-show="editType !== 'transfer'">
+                                                    <div x-show="['income', 'expense'].includes(editType)">
                                                         <label class="section-title block mb-1">Kategori</label>
-                                                        <select name="category_id" x-model="editCategory" class="input-field" x-bind:required="editType !== 'transfer'">
+                                                        <select name="category_id" x-model="editCategory" class="input-field" x-bind:required="['income', 'expense'].includes(editType)">
                                                             @foreach($categories as $cat)
                                                                 <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                                                             @endforeach
@@ -774,15 +784,15 @@
                 <div class="card p-3.5 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
                         <div class="w-9 h-9 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg shrink-0">
-                            {{ $trx->type === 'income' ? '💰' : '💸' }}
+                            {{ $trx->type === 'transfer' ? '🔄' : ($trx->isDebt() ? '🤝' : ($trx->isInflow() ? '💰' : '💸')) }}
                         </div>
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize truncate">{{ $trx->raw_text }}</p>
-                            <p class="text-xs text-slate-400">{{ $trx->category->name ?? 'Lain-lain' }} · {{ $trx->created_at->format('H:i') }}</p>
+                            <p class="text-xs text-slate-400">{{ $trx->type === 'transfer' || $trx->isDebt() ? $trx->type_label : ($trx->category->name ?? 'Lain-lain') }} · {{ $trx->created_at->format('H:i') }}</p>
                         </div>
                     </div>
-                    <p class="text-sm font-bold {{ $trx->type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200' }} shrink-0">
-                        {{ $trx->type === 'income' ? '+' : '-' }}Rp {{ number_format($trx->amount, 0, ',', '.') }}
+                    <p class="text-sm font-bold {{ $trx->isInflow() ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200' }} shrink-0">
+                        {{ $trx->type === 'transfer' ? '' : ($trx->isInflow() ? '+' : '-') }}Rp {{ number_format($trx->amount, 0, ',', '.') }}
                     </p>
                 </div>
                 @endforeach

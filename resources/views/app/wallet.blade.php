@@ -264,15 +264,15 @@
                 <div class="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-700/20 transition-colors">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-base shrink-0">
-                            {{ $act->type === 'income' ? '💰' : '💸' }}
+                            {{ $act->type === 'transfer' ? '🔄' : ($act->isDebt() ? '🤝' : ($act->isInflow() ? '💰' : '💸')) }}
                         </div>
                         <div>
                             <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">{{ $act->raw_text }}</p>
                             <p class="text-xs text-slate-400">{{ $act->wallet->name ?? '-' }} · {{ $act->created_at->translatedFormat('d M, H:i') }}</p>
                         </div>
                     </div>
-                    <p class="text-sm font-bold {{ $act->type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300' }} shrink-0">
-                        {{ $act->type === 'income' ? '+' : '-' }}Rp {{ number_format($act->amount, 0, ',', '.') }}
+                    <p class="text-sm font-bold {{ $act->isInflow() ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300' }} shrink-0">
+                        {{ $act->type === 'transfer' ? '' : ($act->isInflow() ? '+' : '-') }}Rp {{ number_format($act->amount, 0, ',', '.') }}
                     </p>
                 </div>
                 @endforeach

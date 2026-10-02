@@ -6,6 +6,29 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
+    /** Semua tipe yang valid di kolom `type` */
+    public const TYPES = ['income', 'expense', 'transfer', 'refund', 'debt', 'repay_debt', 'receivable', 'collect_receivable'];
+
+    /** Tipe yang menambah saldo dompet asal (wallet_id) */
+    public const INFLOW_TYPES = ['income', 'refund', 'debt', 'collect_receivable'];
+
+    /** Tipe yang mengurangi saldo dompet asal (wallet_id) */
+    public const OUTFLOW_TYPES = ['expense', 'transfer', 'repay_debt', 'receivable'];
+
+    /** Tipe hutang/piutang — tidak dihitung sebagai pemasukan/pengeluaran */
+    public const DEBT_TYPES = ['debt', 'repay_debt', 'receivable', 'collect_receivable'];
+
+    public const TYPE_LABELS = [
+        'income'             => 'Pemasukan',
+        'expense'            => 'Pengeluaran',
+        'transfer'           => 'Mutasi',
+        'refund'             => 'Refund',
+        'debt'               => 'Hutang',
+        'repay_debt'         => 'Bayar Hutang',
+        'receivable'         => 'Piutang',
+        'collect_receivable' => 'Terima Piutang',
+    ];
+
     protected $fillable = [
         'user_id',
         'category_id',
@@ -43,6 +66,21 @@ class Transaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function isInflow(): bool
+    {
+        return in_array($this->type, self::INFLOW_TYPES, true);
+    }
+
+    public function isDebt(): bool
+    {
+        return in_array($this->type, self::DEBT_TYPES, true);
+    }
+
+    public function getTypeLabelAttribute(): string
+    {
+        return self::TYPE_LABELS[$this->type] ?? ucfirst((string) $this->type);
     }
 
     /**

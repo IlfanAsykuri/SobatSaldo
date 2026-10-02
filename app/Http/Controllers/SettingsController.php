@@ -93,7 +93,7 @@ class SettingsController extends Controller
                     fputcsv($handle, [
                         $trx->created_at->format('d/m/Y H:i'),
                         $trx->raw_text,
-                        $trx->type === 'income' ? 'Pemasukan' : 'Pengeluaran',
+                        $trx->type_label,
                         $trx->category->name ?? 'Lain-lain',
                         $trx->wallet->name ?? '-',
                         number_format((float) $trx->amount, 0, ',', '.'),

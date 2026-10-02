@@ -38,7 +38,8 @@ class WalletController extends Controller
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            return back()->with('error', 'Terjadi kesalahan saat memuat dompet.');
+            // Jangan pakai back(): jika halaman sebelumnya adalah /wallet, ini jadi redirect loop
+            return redirect()->route('app.workspace')->with('error', 'Terjadi kesalahan saat memuat dompet.');
         }
     }
 

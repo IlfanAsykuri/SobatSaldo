@@ -170,6 +170,7 @@ class AuthController extends Controller
             ['name' => 'Lain-lain',   'type' => 'expense', 'is_default' => true,  'keywords' => []],
             ['name' => 'Gaji',        'type' => 'income',  'is_default' => false, 'keywords' => ['gaji', 'salary', 'upah', 'honor', 'honorarium', 'payroll']],
             ['name' => 'Freelance',   'type' => 'income',  'is_default' => false, 'keywords' => ['freelance', 'proyek', 'project', 'klien', 'client', 'jasa']],
+            ['name' => 'Kiriman',     'type' => 'income',  'is_default' => false, 'keywords' => ['kiriman']],
             ['name' => 'Pemasukan Lain', 'type' => 'income', 'is_default' => false, 'keywords' => ['cair', 'terima', 'transfer masuk', 'bonus', 'reward', 'cashback', 'refund', 'kembali']],
         ];
 

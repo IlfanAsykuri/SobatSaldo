@@ -11,7 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        \Illuminate\Support\Facades\DB::statement("ALTER TABLE transactions MODIFY COLUMN type ENUM('income', 'expense', 'transfer', 'debt', 'receivable', 'refund') NOT NULL");
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->enum('type', ['income', 'expense', 'transfer', 'debt', 'receivable', 'refund'])->change();
+        });
     }
 
     /**
@@ -19,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        \Illuminate\Support\Facades\DB::statement("ALTER TABLE transactions MODIFY COLUMN type ENUM('income', 'expense', 'transfer') NOT NULL");
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->enum('type', ['income', 'expense', 'transfer'])->change();
+        });
     }
 };

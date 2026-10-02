@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class TransactionController extends Controller
 {
@@ -151,20 +152,21 @@ class TransactionController extends Controller
             }
             
             if ($inputMode === 'hutang') {
-                $type = in_array($request->type, ['debt', 'collect_receivable']) ? 'income' : 'expense';
-                
-                $prefix = '';
-                if ($request->type === 'debt') $prefix = 'Hutang dari ';
-                if ($request->type === 'repay_debt') $prefix = 'Bayar hutang ke ';
-                if ($request->type === 'receivable') $prefix = 'Beri pinjaman ke ';
-                if ($request->type === 'collect_receivable') $prefix = 'Terima piutang dari ';
-                
+                // Disimpan dengan tipe hutang/piutang sendiri agar tidak ikut
+                // terhitung sebagai pemasukan/pengeluaran di metrik bulanan
+                $prefix = match ($request->type) {
+                    'debt'               => 'Hutang dari ',
+                    'repay_debt'         => 'Bayar hutang ke ',
+                    'receivable'         => 'Beri pinjaman ke ',
+                    'collect_receivable' => 'Terima piutang dari ',
+                };
+
                 $transaction = Transaction::create([
                     'user_id'      => $userId,
                     'raw_text'     => $prefix . $request->desc_hutang,
                     'desc_hutang'  => $request->desc_hutang,
                     'amount'       => $request->amount,
-                    'type'         => $type,
+                    'type'         => $request->type,
                     'wallet_id'    => $request->wallet_id,
                 ]);
                 
@@ -196,15 +198,17 @@ class TransactionController extends Controller
                 $rawText  = trim(str_replace($adminMatch[0], '', $rawText));
             }
 
-            // 2. Deteksi tipe transaksi
+            // 2. Deteksi tipe transaksi (dicocokkan per kata utuh, bukan substring,
+            //    agar "isi" tidak cocok dengan "posisi")
             $transferKeywords = ['tarik', 'withdraw', 'transfer', 'pindah', 'topup', 'cashout', 'setor', 'isi'];
             $incomeKeywords   = ['gaji', 'cair', 'masuk', 'terima', 'bonus', 'freelance', 'pemasukan'];
-            
+
             $lowerRaw = strtolower($rawText);
-            
-            if (Str::contains($lowerRaw, $transferKeywords)) {
-                $type = 'transfer';
-            } elseif (Str::startsWith($rawText, '+') || Str::contains($lowerRaw, $incomeKeywords)) {
+            $rawWords = preg_split('/[^a-z0-9]+/', $lowerRaw, -1, PREG_SPLIT_NO_EMPTY);
+
+            $hasTransferWord = (bool) array_intersect($rawWords, $transferKeywords);
+
+            if (Str::startsWith($rawText, '+') || array_intersect($rawWords, $incomeKeywords)) {
                 $type    = 'income';
                 $rawText = ltrim($rawText, '+');
             }
@@ -221,30 +225,36 @@ class TransactionController extends Controller
                 $rawText = $originalRaw; // Fallback ke teks asli
             }
 
-            // 4. Smart Dictionary Matching (hanya jika bukan transfer)
+            // 4. Smart Dictionary Matching
+            //    Kata kunci kategori lebih diutamakan daripada kata transfer, jadi
+            //    "isi bensin" → Transport dan "topup game" → Hiburan, sedangkan
+            //    "tarik bca" (tanpa kata kategori) tetap jadi mutasi.
             $categoryId = null;
             $words      = array_filter(explode(' ', strtolower(preg_replace('/[^a-z0-9\s]/i', '', $rawText))));
-            
-            if ($type !== 'transfer') {
-                foreach ($words as $word) {
-                    if (strlen($word) < 2) continue;
-                    $match = KeywordDictionary::forUser($userId)
-                        ->where('keyword', $word)
-                        ->with('category')
-                        ->first();
-                    if ($match) {
-                        $categoryId = $match->category_id;
-                        if ($match->category) {
-                            $type = $match->category->type;
-                        }
-                        break;
+
+            foreach ($words as $word) {
+                if (strlen($word) < 2 || in_array($word, $transferKeywords, true)) continue;
+                $match = KeywordDictionary::forUser($userId)
+                    ->where('keyword', $word)
+                    ->with('category')
+                    ->first();
+                if ($match) {
+                    $categoryId = $match->category_id;
+                    if ($match->category) {
+                        $type = $match->category->type;
                     }
+                    break;
                 }
-                // Fallback Default Category
-                if (!$categoryId) {
-                    $fallback = Category::where('user_id', $userId)->where('is_default', true)->first();
-                    $categoryId = $fallback?->id;
-                }
+            }
+
+            if (!$categoryId && $hasTransferWord) {
+                $type = 'transfer';
+            }
+
+            // Fallback Default Category
+            if (!$categoryId && $type !== 'transfer') {
+                $fallback = Category::where('user_id', $userId)->where('is_default', true)->first();
+                $categoryId = $fallback?->id;
             }
 
             // 5. Smart Routing & Wallet Assignment
@@ -276,7 +286,7 @@ class TransactionController extends Controller
                     $cashWalletId = Wallet::where('user_id', $userId)->where('id', '!=', $matchedWalletId)->first()?->id;
                 }
                 
-                $isPushToWallet = Str::contains($lowerRaw, ['topup', 'setor', 'isi']);
+                $isPushToWallet = (bool) array_intersect($rawWords, ['topup', 'setor', 'isi']);
                 
                 if ($isPushToWallet) {
                     // Push: Dari Cash ke Dompet (misal: setor bca)
@@ -356,59 +366,57 @@ class TransactionController extends Controller
 
     public function update(Request $request, int $id)
     {
+        $userId = Auth::id();
+
+        // IDOR: pastikan transaksi milik user yang login
+        $transaction = Transaction::where('id', $id)->where('user_id', $userId)->first();
+        if (!$transaction) {
+            return $this->respond($request, false, 'Transaksi tidak ditemukan.', 404);
+        }
+
+        // Kategori hanya wajib untuk pemasukan/pengeluaran
+        $needsCategory = in_array($request->type, ['income', 'expense'], true);
+
+        // Divalidasi di luar try agar error validasi tampil sebagai pesan form, bukan error 500
+        $request->validate([
+            'raw_text'    => ['required', 'string', 'max:500'],
+            'amount'      => ['required', 'numeric', 'min:0'],
+            'type'        => ['required', Rule::in(Transaction::TYPES)],
+            'category_id' => [$needsCategory ? 'required' : 'nullable', Rule::exists('categories', 'id')->where('user_id', $userId)],
+            'wallet_id'   => ['nullable', Rule::exists('wallets', 'id')->where('user_id', $userId)],
+            'to_wallet_id'=> [$request->type === 'transfer' ? 'required' : 'nullable', Rule::exists('wallets', 'id')->where('user_id', $userId), 'different:wallet_id'],
+        ], [
+            'category_id.required' => 'Kategori harus diisi untuk pemasukan/pengeluaran.',
+            'to_wallet_id.required' => 'Dompet tujuan wajib dipilih untuk mutasi.',
+        ]);
+
         try {
-            // IDOR: pastikan transaksi milik user yang login
-            $transaction = Transaction::where('id', $id)
-                ->where('user_id', Auth::id())
-                ->firstOrFail();
-
-            $request->validate([
-                'raw_text'    => ['required', 'string', 'max:500'],
-                'amount'      => ['required', 'numeric', 'min:0'],
-                'type'        => ['required', 'in:income,expense,transfer'],
-                'category_id' => ['nullable', 'exists:categories,id'],
-                'wallet_id'   => ['nullable', 'exists:wallets,id'],
-                'to_wallet_id'=> ['nullable', 'exists:wallets,id'],
-            ]);
-
-            // Verifikasi wallet juga milik user (IDOR)
-            if ($request->filled('wallet_id')) {
-                Wallet::where('id', $request->wallet_id)
-                    ->where('user_id', Auth::id())
-                    ->firstOrFail();
-            }
-            if ($request->filled('to_wallet_id')) {
-                Wallet::where('id', $request->to_wallet_id)
-                    ->where('user_id', Auth::id())
-                    ->firstOrFail();
-            }
-
-            // Jika transfer, category_id = null
-            $categoryId = $request->type === 'transfer' ? null : $request->category_id;
-            
-            // Jika bukan transfer, pastikan category_id ada
-            if ($request->type !== 'transfer' && !$categoryId) {
-                return response()->json(['success' => false, 'message' => 'Kategori harus diisi untuk pemasukan/pengeluaran.'], 422);
-            }
-
             $transaction->update([
                 'raw_text'    => $request->raw_text,
                 'amount'      => $request->amount,
                 'type'        => $request->type,
-                'category_id' => $categoryId,
+                'category_id' => $needsCategory ? $request->category_id : null,
                 'wallet_id'   => $request->wallet_id,
-                'to_wallet_id'=> $request->to_wallet_id,
+                'to_wallet_id'=> $request->type === 'transfer' ? $request->to_wallet_id : null,
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Transaksi berhasil diperbarui.',
-            ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
-            return response()->json(['success' => false, 'message' => 'Transaksi tidak ditemukan.'], 404);
+            return $this->respond($request, true, 'Transaksi berhasil diperbarui.');
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem. Silakan coba lagi.'], 500);
+            report($e);
+            return $this->respond($request, false, 'Terjadi kesalahan sistem. Silakan coba lagi.', 500);
         }
+    }
+
+    /**
+     * Form edit dikirim sebagai form HTML biasa, sedangkan pemanggil AJAX butuh JSON.
+     */
+    private function respond(Request $request, bool $success, string $message, int $status = 200)
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['success' => $success, 'message' => $message], $status);
+        }
+
+        return back()->with($success ? 'success' : 'error', $message);
     }
 
     // ─── Destroy ──────────────────────────────────────────────────────────────
@@ -435,17 +443,18 @@ class TransactionController extends Controller
 
     public function updateCategory(Request $request, int $id)
     {
-        try {
-            $userId = Auth::id();
+        $userId = Auth::id();
 
+        // IDOR: kategori harus milik user ini
+        $request->validate([
+            'category_id' => ['required', Rule::exists('categories', 'id')->where('user_id', $userId)],
+        ]);
+
+        try {
             // IDOR: pastikan transaksi milik user
             $transaction = Transaction::where('id', $id)
                 ->where('user_id', $userId)
                 ->firstOrFail();
-
-            $request->validate([
-                'category_id' => ['required', 'exists:categories,id'],
-            ]);
 
             $oldCategoryId = $transaction->category_id;
             $newCategoryId = (int) $request->category_id;

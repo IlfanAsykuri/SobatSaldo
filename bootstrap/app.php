@@ -19,7 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo('/workspace');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // expectsJson() wajib ikut dicek: tanpa ini, fetch() di workspace yang gagal validasi
+        // mendapat redirect 302 ke halaman HTML, bukan JSON 422 berisi pesan error
         $exceptions->shouldRenderJsonWhen(
-            fn(Request $request) => $request->is('api/*'),
+            fn(Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();

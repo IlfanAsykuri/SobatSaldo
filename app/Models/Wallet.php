@@ -25,20 +25,19 @@ class Wallet extends Model
     }
 
     /**
-     * Saldo dihitung dinamis: total pemasukan - total pengeluaran
+     * Saldo dihitung dinamis: semua uang masuk - semua uang keluar
+     * (lihat Transaction::INFLOW_TYPES / OUTFLOW_TYPES)
      */
     public function getBalanceAttribute(): float
     {
-        $income      = $this->transactions()->where('type', 'income')->sum('amount');
-        $expense     = $this->transactions()->where('type', 'expense')->sum('amount');
-        $transferOut = $this->transactions()->where('type', 'transfer')->sum('amount');
-        $transferIn  = Transaction::where('to_wallet_id', $this->id)->where('type', 'transfer')->sum('amount');
-        
-        $debt        = $this->transactions()->where('type', 'debt')->sum('amount');
-        $receivable  = $this->transactions()->where('type', 'receivable')->sum('amount');
-        $refund      = $this->transactions()->where('type', 'refund')->sum('amount');
-        
-        return (float) ($income - $expense - $transferOut + $transferIn - $debt - $receivable + $refund);
+        $inflow     = $this->transactions()->whereIn('type', Transaction::INFLOW_TYPES)->sum('amount');
+        $outflow    = $this->transactions()->whereIn('type', Transaction::OUTFLOW_TYPES)->sum('amount');
+        $transferIn = Transaction::where('to_wallet_id', $this->id)
+            ->where('user_id', $this->user_id)
+            ->where('type', 'transfer')
+            ->sum('amount');
+
+        return (float) ($inflow - $outflow + $transferIn);
     }
 
     /**

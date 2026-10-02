@@ -109,7 +109,11 @@ class CategorySeeder extends Seeder
             $keywords = $cat['keywords'];
             unset($cat['keywords']);
 
-            $category = Category::create($cat);
+            // firstOrCreate agar seeder aman dijalankan ulang tanpa membuat kategori dobel
+            $category = Category::firstOrCreate(
+                ['name' => $cat['name'], 'type' => $cat['type'], 'user_id' => null],
+                ['is_default' => $cat['is_default']]
+            );
 
             foreach ($keywords as $kw) {
                 // keyword global (user_id = null) sebagai seed awal
