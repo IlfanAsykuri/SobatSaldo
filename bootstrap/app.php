@@ -12,8 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Mempercayai semua proxy (karena Nginx & Cloudflare sudah memfilter di depan)
-        $middleware->trustProxies(at: '*');
+        // Daftar proxy tepercaya diatur lewat TRUSTED_PROXIES di .env (lihat config/trustedproxy.php)
         $middleware->authenticateSessions();
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/workspace');
