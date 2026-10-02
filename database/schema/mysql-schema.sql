@@ -151,16 +151,20 @@ CREATE TABLE `transactions` (
   `user_id` bigint unsigned NOT NULL,
   `category_id` bigint unsigned DEFAULT NULL,
   `wallet_id` bigint unsigned DEFAULT NULL,
+  `to_wallet_id` bigint unsigned DEFAULT NULL,
   `raw_text` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `desc_hutang` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `type` enum('income','expense','transfer','debt','receivable','refund') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('income','expense','transfer','refund','debt','repay_debt','receivable','collect_receivable') COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `transactions_user_id_foreign` (`user_id`),
   KEY `transactions_category_id_foreign` (`category_id`),
   KEY `transactions_wallet_id_foreign` (`wallet_id`),
+  KEY `transactions_to_wallet_id_foreign` (`to_wallet_id`),
   CONSTRAINT `transactions_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`),
+  CONSTRAINT `transactions_to_wallet_id_foreign` FOREIGN KEY (`to_wallet_id`) REFERENCES `wallets` (`id`) ON DELETE SET NULL,
   CONSTRAINT `transactions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `transactions_wallet_id_foreign` FOREIGN KEY (`wallet_id`) REFERENCES `wallets` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -222,3 +226,5 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (13,'2026_06_02_121
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (14,'2026_06_02_123651_add_transfer_to_transactions_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (15,'2026_06_02_130720_make_category_id_nullable_on_transactions_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (16,'2026_06_02_132158_update_type_enum_on_transactions_table_for_accounting',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (17,'2026_10_02_000001_add_debt_settlement_types_to_transactions_table',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (18,'2026_10_02_000002_merge_duplicate_categories',1);
